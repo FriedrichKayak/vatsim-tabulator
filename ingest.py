@@ -39,7 +39,7 @@ for prefile in vatsim['prefiles']:
 for controller in vatsim['controllers']:
     sql = "INSERT INTO controllers VALUES ('{0}', '{1}', '{2}', '{3}');".format(controller['callsign'],
                                                                              controller['logon_time'],
-                                                                             controller['name'],
+                                                                             controller['name'].replace("'", "''"),
                                                                              controller['cid'])
     print(sql)
     cur.execute(sql)
