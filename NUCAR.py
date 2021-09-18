@@ -1,5 +1,3 @@
-# 698739830611378249
-# prod 401902118749077506
 import datetime
 import os
 import sqlite3
@@ -9,9 +7,11 @@ from dotenv import load_dotenv
 
 
 class GroupFlight(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, staffing_channel, group_flight_channel):
         self.index = 0
         self.bot = bot
+        self.staffing_channel = staffing_channel
+        self.group_flight_channel = group_flight_channel
         self.group_flight_notifier.start()
         self.controller_notifier.start()
 
@@ -46,7 +46,7 @@ class GroupFlight(commands.Cog):
                         cur.execute("INSERT INTO position_activity VALUES ('{0}', '{1}', '{2}', 'A', '{3}')".format(callsign, controller_cid, controller_name, pos_name))
                         con.commit()
                         notice = "***Well, hello there!***  {0} (CID {1}) just signed on to {2} ({3}).".format(controller_name, controller_cid, pos_name, callsign)
-                        channel = self.bot.get_channel(401902118749077506)
+                        channel = self.bot.get_channel(self.staffing_channel)
                         await channel.send(notice)
 
         sql = "select position_activity.callsign, position_activity.controller_name, position_activity.cid, position_activity.pos_name, coalesce(controllers.callsign, 'OFFLINE') is_active from position_activity left join controllers on position_activity.callsign = controllers.callsign and position_activity.cid = controllers.controller_cid where position_activity.status = 'A';"
@@ -58,7 +58,7 @@ class GroupFlight(commands.Cog):
                 cur.execute("DELETE FROM position_activity WHERE callsign = '{0}' and cid = '{1}'".format(online[0], online[2]))
                 con.commit()
                 notice = "***Byyyeeeeeeeee.***  {0} (CID {1}) just signed off of {2} ({3}).".format(online[1], online[2], online[3], online[0])
-                channel = self.bot.get_channel(401902118749077506)
+                channel = self.bot.get_channel(self.staffing_channel)
                 await channel.send(notice)
 
         cur.close()
@@ -79,7 +79,7 @@ class GroupFlight(commands.Cog):
             previous_notifications = cur2.fetchone();
             if previous_notifications[0] == 0:
                 notice = "***Sheeeesh!***  Group flight check... there are {0} aircraft filed from {1} to {2}.".format(row[2], row[0], row[1])
-                channel = self.bot.get_channel(401902118749077506)
+                channel = self.bot.get_channel(self.group_flight_channel)
                 await channel.send(notice)
                 cur2.execute("INSERT INTO history VALUES ('{0}','{1}',datetime('now'))".format(row[0], row[1]))
                 con.commit()
@@ -99,6 +99,8 @@ class GroupFlight(commands.Cog):
 
 load_dotenv()
 DISCORD_KEY = os.environ.get("DISCORD_KEY")
+STAFF_CHANNEL = os.environ.get("STAFF_CHANNEL")
+GROUP_FLIGHT_CHANNEL = os.environ.get("GROUP_FLIGHT_CHANNEL")
 my_bot = discord.ext.commands.Bot("!")
-GroupFlight(my_bot)
+GroupFlight(my_bot, STAFF_CHANNEL, GROUP_FLIGHT_CHANNEL)
 my_bot.run(DISCORD_KEY)
